@@ -3,101 +3,94 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Kaulson Network | Oficial</title>
+    <title>Kaulson Network | Oficial v2.1</title>
     <style>
-        :root { --gold: #d4af37; --dark: #0a0a0a; --gray: #1a1a1a; }
-        body { background-color: var(--dark); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-        .header { padding: 25px; text-align: center; border-bottom: 1px solid #d4af3733; }
-        .balance-label { color: #888; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; }
-        .balance-amount { color: var(--gold); font-size: 38px; font-weight: bold; margin-top: 5px; }
-        .main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .coin-btn { 
-            width: 180px; height: 180px; border-radius: 50%; 
+        :root { --gold: #d4af37; --dark: #0a0a0a; --gray: #151515; }
+        body { background: var(--dark); color: white; font-family: sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        .header { padding: 25px; text-align: center; border-bottom: 1px solid #333; }
+        .balance-amount { color: var(--gold); font-size: 42px; font-weight: bold; text-shadow: 0 0 15px rgba(212,175,55,0.3); }
+        .main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+        .k-btn { 
+            width: 170px; height: 170px; border-radius: 50%; 
             background: radial-gradient(circle, #f9df7b, #d4af37); 
-            border: 6px solid var(--gray); box-shadow: 0 0 30px rgba(212,175,55,0.3);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 75px; font-weight: bold; color: #1a1a1a; cursor: pointer; transition: 0.3s; 
+            border: 6px solid #222; font-size: 70px; font-weight: bold; color: #1a1a1a; cursor: pointer;
+            transition: 0.3s; box-shadow: 0 0 20px rgba(212,175,55,0.2);
         }
-        .active-pulse { animation: pulse 1.5s infinite; border-color: #00ff00 !important; }
-        @keyframes pulse { 0% { transform: scale(1); box-shadow: 0 0 20px rgba(212,175,55,0.3); } 50% { transform: scale(1.05); box-shadow: 0 0 50px rgba(0,255,0,0.4); } 100% { transform: scale(1); } }
+        .mining-on { animation: pulse 1.5s infinite; border-color: #00ff00 !important; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
         .status-badge { margin-top: 20px; background: var(--gray); padding: 10px 20px; border-radius: 20px; border: 1px solid var(--gold); color: var(--gold); font-size: 13px; font-weight: bold; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 92%; margin-bottom: 20px; }
-        .card { background: #111; padding: 12px; border-radius: 10px; text-align: center; border: 1px solid #222; }
-        .card b { color: var(--gold); display: block; font-size: 15px; }
-        .card span { color: #666; font-size: 10px; text-transform: uppercase; }
-        #whitepaper { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 1000; padding: 30px; overflow-y: auto; box-sizing: border-box; }
-        .btn-close { color: var(--gold); border: 1px solid var(--gold); padding: 10px; display: block; text-align: center; border-radius: 8px; margin-bottom: 20px; text-decoration: none; }
+        .ref-area { width: 90%; background: #111; padding: 15px; border-radius: 12px; margin-top: 20px; border: 1px dashed #444; }
+        .btn-ref { background: var(--gold); border: none; width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; color: #000; margin-top: 10px; cursor: pointer; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 90%; margin-top: 20px; }
+        .card { background: #111; padding: 10px; border-radius: 8px; border: 1px solid #222; font-size: 12px; }
+        .card b { color: var(--gold); display: block; font-size: 14px; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <div class="balance-label">Saldo Acumulado $KSON</div>
+        <div style="font-size: 11px; color: #888; letter-spacing: 2px;">SALDO $KSON</div>
         <div id="balance" class="balance-amount">0.00000</div>
     </div>
 
     <div class="main">
-        <div class="coin-btn" id="mineBtn">K</div>
-        <div class="status-badge" id="status">SESSÃO INATIVA</div>
-        
-        <div style="margin-top: 20px; display: flex; gap: 10px;">
-            <button onclick="openWP()" style="background:none; border: 1px solid #444; color:#888; padding:8px 15px; border-radius:5px;">Whitepaper</button>
-            <button onclick="alert('Mínimo para levantamento: 500 KSON')" style="background:none; border: 1px solid var(--gold); color:var(--gold); padding:8px 15px; border-radius:5px;">Levantar</button>
+        <button id="mineBtn" class="k-btn">K</button>
+        <div id="status" class="status-badge">PRONTO PARA MINERAR</div>
+
+        <div class="ref-area">
+            <span style="font-size: 12px; color: #888;">CONVIDE E GANHE +25%</span>
+            <button class="btn-ref" onclick="copyInvite()">COPIAR LINK DE CONVITE</button>
+        </div>
+
+        <div class="grid">
+            <div class="card"><b id="rateDisplay">2.0 KSON/h</b><span>Velocidade</span></div>
+            <div class="card"><b id="timer">24:00:00</b><span>Ciclo Ativo</span></div>
         </div>
     </div>
 
-    <div class="grid">
-        <div class="card"><b id="rate">2.0 $KSON/h</b><span>Velocidade</span></div>
-        <div class="card"><b id="timer">24:00:00</b><span>Ciclo Restante</span></div>
-        <div class="card"><b>90,000,000</b><span>Suprimento Máximo</span></div>
-        <div class="card"><b>Ativo</b><span>ID Protegido</span></div>
-    </div>
-
-    <div id="whitepaper">
-        <a href="#" class="btn-close" onclick="closeWP()">VOLTAR AO APP</a>
-        <h2 style="color:var(--gold)">Protocolo Kaulson ($KSON)</h2>
-        <p><b>1. Escassez:</b> O limite máximo é de 90M de moedas. Após isso, a mineração é desativada pelo código.</p>
-        <p><b>2. Halving:</b> 2.0/h (0-100k users), 1.0/h (100k-500k), 0.5/h (500k-1M).</p>
-        <p><b>3. Prova de Presença:</b> É necessário validar a atividade a cada 24 horas.</p>
-        <p><b>4. Segurança Antifraude:</b> O sistema identifica o ID único do dispositivo. Tentativas de contas múltiplas resultam em bloqueio automático.</p>
-    </div>
-
     <script>
-        let balance = 0.00000;
-        let mining = false;
-        let maxSupply = 90000000;
-        const ratePerSec = 0.00055556; // Equivale a 2.0 por hora
+        // 1. BASE DE DADOS LOCAL (Guarda o progresso)
+        let balance = parseFloat(localStorage.getItem('kson_total')) || 0;
+        let isMining = false;
+        let baseRate = 0.00055556; // 2.0 por hora
+        
+        const balanceEl = document.getElementById('balance');
+        const statusEl = document.getElementById('status');
+        balanceEl.innerText = balance.toFixed(5);
 
-        function openWP() { document.getElementById('whitepaper').style.display = 'block'; }
-        function closeWP() { document.getElementById('whitepaper').style.display = 'none'; }
+        // 2. SISTEMA DE CONVITE
+        function copyInvite() {
+            const myID = Math.random().toString(36).substring(7).toUpperCase();
+            const link = window.location.origin + "?ref=" + myID;
+            navigator.clipboard.writeText(link);
+            alert("Link de Convite Copiado! Ganharás +25% bónus por este amigo.");
+        }
 
+        // 3. MOTOR DE MINERAÇÃO
         document.getElementById('mineBtn').addEventListener('click', function() {
-            if (!mining) {
-                mining = true;
-                this.classList.add('active-pulse');
-                document.getElementById('status').innerText = "A MINERAR...";
-                document.getElementById('status').style.color = "#00ff00";
+            if (!isMining) {
+                isMining = true;
+                this.classList.add('mining-on');
+                statusEl.innerText = "A MINERAR... (BÓNUS ATIVO)";
+                statusEl.style.borderColor = "#00ff00";
+                statusEl.style.color = "#00ff00";
                 
-                // Lógica de Mineração em Tempo Real
                 setInterval(() => {
-                    if (balance < maxSupply) {
-                        balance += ratePerSec;
-                        document.getElementById('balance').innerText = balance.toFixed(5);
-                    } else {
-                        document.getElementById('status').innerText = "90M ATINGIDOS - FIM";
-                    }
+                    balance += baseRate;
+                    balanceEl.innerText = balance.toFixed(5);
+                    localStorage.setItem('kson_total', balance); // Salva na Base de Dados
                 }, 1000);
 
-                // Simulação de Timer
-                let seconds = 86400;
+                // Timer de 24h
+                let sec = 86400;
                 setInterval(() => {
-                    if (seconds > 0) {
-                        seconds--;
-                        let h = Math.floor(seconds / 3600);
-                        let m = Math.floor((seconds % 3600) / 60);
-                        let s = seconds % 60;
+                    if(sec > 0) {
+                        sec--;
+                        let h = Math.floor(sec/3600);
+                        let m = Math.floor((sec%3600)/60);
+                        let s = sec%60;
                         document.getElementById('timer').innerText = 
-                            (h<10?'0':'')+h + ":" + (m<10?'0':'')+m + ":" + (s<10?'0':'')+s;
+                            (h<10?'0':'')+h+":"+(m<10?'0':'')+m+":"+(s<10?'0':'')+s;
                     }
                 }, 1000);
             }
