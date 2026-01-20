@@ -3,95 +3,94 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Kaulson Network | Oficial v2.1</title>
+    <title>Kaulson Network | Elite</title>
     <style>
-        :root { --gold: #d4af37; --dark: #0a0a0a; --gray: #151515; }
-        body { background: var(--dark); color: white; font-family: sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-        .header { padding: 25px; text-align: center; border-bottom: 1px solid #333; }
-        .balance-amount { color: var(--gold); font-size: 42px; font-weight: bold; text-shadow: 0 0 15px rgba(212,175,55,0.3); }
-        .main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+        :root { --gold: #d4af37; --dark: #0a0a0a; --gray: #1a1a1a; }
+        body { background: var(--dark); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        
+        .header { padding: 20px; text-align: center; border-bottom: 1px solid #333; background: #111; }
+        .balance-amount { color: var(--gold); font-size: 45px; font-weight: bold; }
+
+        .main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; overflow-y: auto; }
+        
+        /* Botão de Mineração */
         .k-btn { 
-            width: 170px; height: 170px; border-radius: 50%; 
+            width: 160px; height: 160px; border-radius: 50%; 
             background: radial-gradient(circle, #f9df7b, #d4af37); 
-            border: 6px solid #222; font-size: 70px; font-weight: bold; color: #1a1a1a; cursor: pointer;
-            transition: 0.3s; box-shadow: 0 0 20px rgba(212,175,55,0.2);
+            border: 6px solid #222; font-size: 70px; font-weight: bold; color: #111; cursor: pointer;
+            box-shadow: 0 0 20px rgba(212,175,55,0.2); transition: 0.3s;
         }
-        .mining-on { animation: pulse 1.5s infinite; border-color: #00ff00 !important; }
+        .active { animation: pulse 1.5s infinite; border-color: #00ff00 !important; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
-        .status-badge { margin-top: 20px; background: var(--gray); padding: 10px 20px; border-radius: 20px; border: 1px solid var(--gold); color: var(--gold); font-size: 13px; font-weight: bold; }
-        .ref-area { width: 90%; background: #111; padding: 15px; border-radius: 12px; margin-top: 20px; border: 1px dashed #444; }
-        .btn-ref { background: var(--gold); border: none; width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; color: #000; margin-top: 10px; cursor: pointer; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 90%; margin-top: 20px; }
-        .card { background: #111; padding: 10px; border-radius: 8px; border: 1px solid #222; font-size: 12px; }
-        .card b { color: var(--gold); display: block; font-size: 14px; }
+
+        /* Secção de Convite e Ranking */
+        .card-box { width: 90%; background: #151515; padding: 15px; border-radius: 15px; margin-top: 20px; border: 1px solid #222; }
+        .btn-gold { background: var(--gold); border: none; width: 100%; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        
+        .ranking-list { width: 100%; margin-top: 10px; text-align: left; font-size: 13px; }
+        .rank-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #222; }
+        .rank-name { color: var(--gold); }
+
+        .nav { height: 60px; background: #000; border-top: 1px solid #222; display: flex; justify-content: space-around; align-items: center; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <div style="font-size: 11px; color: #888; letter-spacing: 2px;">SALDO $KSON</div>
+        <div style="font-size: 11px; color: #888;">SALDO ATUAL $KSON</div>
         <div id="balance" class="balance-amount">0.00000</div>
     </div>
 
     <div class="main">
         <button id="mineBtn" class="k-btn">K</button>
-        <div id="status" class="status-badge">PRONTO PARA MINERAR</div>
+        <div id="status" style="margin-top:15px; font-weight:bold; color:var(--gold)">PRONTO PARA MINERAR</div>
 
-        <div class="ref-area">
-            <span style="font-size: 12px; color: #888;">CONVIDE E GANHE +25%</span>
-            <button class="btn-ref" onclick="copyInvite()">COPIAR LINK DE CONVITE</button>
+        <div class="card-box">
+            <div style="font-size: 14px; font-weight: bold;">SISTEMA DE CONVITES</div>
+            <p style="font-size: 11px; color: #888;">Ganha +25% de bónus por cada amigo que convidares!</p>
+            <button class="btn-gold" onclick="shareLink()">COPIAR MEU LINK</button>
         </div>
 
-        <div class="grid">
-            <div class="card"><b id="rateDisplay">2.0 KSON/h</b><span>Velocidade</span></div>
-            <div class="card"><b id="timer">24:00:00</b><span>Ciclo Ativo</span></div>
+        <div class="card-box">
+            <div style="font-size: 14px; font-weight: bold;">TOP MINERADORES 🏆</div>
+            <div class="ranking-list">
+                <div class="rank-item"><span class="rank-name">1. Kaulson_Admin</span><span>942.50 $KSON</span></div>
+                <div class="rank-item"><span class="rank-name">2. User_772</span><span>120.10 $KSON</span></div>
+                <div class="rank-item"><span class="rank-name">3. User_091</span><span>85.44 $KSON</span></div>
+            </div>
         </div>
     </div>
 
-    <script>
-        // 1. BASE DE DADOS LOCAL (Guarda o progresso)
-        let balance = parseFloat(localStorage.getItem('kson_total')) || 0;
-        let isMining = false;
-        let baseRate = 0.00055556; // 2.0 por hora
-        
-        const balanceEl = document.getElementById('balance');
-        const statusEl = document.getElementById('status');
-        balanceEl.innerText = balance.toFixed(5);
+    <div class="nav"><span>🏠</span><span>👥</span><span>🏆</span><span>⚙️</span></div>
 
-        // 2. SISTEMA DE CONVITE
-        function copyInvite() {
-            const myID = Math.random().toString(36).substring(7).toUpperCase();
-            const link = window.location.origin + "?ref=" + myID;
-            navigator.clipboard.writeText(link);
-            alert("Link de Convite Copiado! Ganharás +25% bónus por este amigo.");
+    <script>
+        // BASE DE DADOS LOCAL
+        let balance = parseFloat(localStorage.getItem('kaulson_bal')) || 0.00000;
+        let isMining = false;
+        let rate = 0.00055556; // 2.0 KSON/h
+
+        const balDisplay = document.getElementById('balance');
+        balDisplay.innerText = balance.toFixed(5);
+
+        // FUNÇÃO PARTILHAR
+        function shareLink() {
+            const url = "https://kaulson.vercel.app/?ref=KAULSON" + Math.floor(Math.random() * 999);
+            navigator.clipboard.writeText(url);
+            alert("Link copiado! Bónus de 25% ativo para novos membros.");
         }
 
-        // 3. MOTOR DE MINERAÇÃO
+        // MOTOR DE MINERAÇÃO
         document.getElementById('mineBtn').addEventListener('click', function() {
             if (!isMining) {
                 isMining = true;
-                this.classList.add('mining-on');
-                statusEl.innerText = "A MINERAR... (BÓNUS ATIVO)";
-                statusEl.style.borderColor = "#00ff00";
-                statusEl.style.color = "#00ff00";
-                
-                setInterval(() => {
-                    balance += baseRate;
-                    balanceEl.innerText = balance.toFixed(5);
-                    localStorage.setItem('kson_total', balance); // Salva na Base de Dados
-                }, 1000);
+                this.classList.add('active');
+                document.getElementById('status').innerText = "MINERAÇÃO ATIVA";
+                document.getElementById('status').style.color = "#00ff00";
 
-                // Timer de 24h
-                let sec = 86400;
                 setInterval(() => {
-                    if(sec > 0) {
-                        sec--;
-                        let h = Math.floor(sec/3600);
-                        let m = Math.floor((sec%3600)/60);
-                        let s = sec%60;
-                        document.getElementById('timer').innerText = 
-                            (h<10?'0':'')+h+":"+(m<10?'0':'')+m+":"+(s<10?'0':'')+s;
-                    }
+                    balance += rate;
+                    balDisplay.innerText = balance.toFixed(5);
+                    localStorage.setItem('kaulson_bal', balance); // Salva na Base de Dados do telemóvel
                 }, 1000);
             }
         });
