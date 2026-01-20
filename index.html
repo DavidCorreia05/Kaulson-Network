@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Kaulson Network | Mineração Oficial</title>
+    <title>Kaulson Network | Protocolo Oficial</title>
 
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-      import { getFirestore, doc, setDoc, onSnapshot, collection, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+      import { getFirestore, doc, setDoc, onSnapshot, collection, query, orderBy, limit, getCountFromServer } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
       const firebaseConfig = {
         apiKey: "AIzaSyA51GrwiUnvZVbv4Cvz-M", 
@@ -18,17 +18,26 @@
         appId: "1:756558405529:web:999f6fa"
       };
 
-      // Inicialização Segura
       const app = initializeApp(firebaseConfig);
       const db = getFirestore(app);
 
-      // Gerador de ID Anónimo para integridade do utilizador
+      // ID Único e Anónimo
       if(!localStorage.getItem('kson_user_id')) {
-          localStorage.setItem('kson_user_id', 'Minerador_' + Math.floor(Math.random() * 9000 + 1000));
+          localStorage.setItem('kson_user_id', 'User_' + Math.floor(Math.random() * 89999 + 10000));
       }
       const userId = localStorage.getItem('kson_user_id');
 
-      // Função de Gravação com Verificação de Erro
+      // --- LÓGICA DE ESCASSEZ (HALVING) ---
+      window.obterTaxa = async () => {
+        const coll = collection(db, "ranking");
+        const snapshot = await getCountFromServer(coll);
+        const totalUsers = snapshot.data().count;
+        
+        if (totalUsers <= 100000) return 0.000555; // 2.0 p/ hora
+        if (totalUsers <= 500000) return 0.000277; // 1.0 p/ hora
+        return 0.000138; // 0.5 p/ hora
+      };
+
       window.saveData = async (valor) => {
         try {
           await setDoc(doc(db, "ranking", userId), {
@@ -36,85 +45,44 @@
             saldo: valor,
             timestamp: Date.now()
           }, { merge: true });
-        } catch (error) {
-          console.error("Erro na Blockchain/Firebase:", error);
-        }
+        } catch (e) { console.error(e); }
       };
 
-      // Listener do Ranking em Tempo Real
-      const q = query(collection(db, "ranking"), orderBy("saldo", "desc"), limit(10));
-      onSnapshot(q, (snapshot) => {
-        const rankingDiv = document.getElementById('rankList');
-        if (rankingDiv) {
-            rankingDiv.innerHTML = "";
-            snapshot.forEach((doc) => {
-                const data = doc.data();
-                rankingDiv.innerHTML += `
-                    <div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid #222; font-family:monospace;">
-                        <span style="color:#aaa;">${data.id}</span>
-                        <span style="color:#d4af37; font-weight:bold;">${data.saldo.toFixed(5)} $KSON</span>
-                    </div>`;
-            });
-        }
+      // Ranking e Monitor de Rede
+      onSnapshot(query(collection(db, "ranking"), orderBy("saldo", "desc"), limit(5)), (snap) => {
+        const list = document.getElementById('rankList');
+        list.innerHTML = "";
+        snap.forEach(d => {
+            const u = d.data();
+            list.innerHTML += `<div style="display:flex; justify-content:space-between; padding:8px; border-bottom:1px solid #222; font-size:13px;">
+                <span style="color:#888;">${u.id}</span>
+                <span style="color:#d4af37;">${u.saldo.toFixed(5)} $KSON</span>
+            </div>`;
+        });
       });
     </script>
 
     <style>
-        body { background: #000; color: #fff; font-family: sans-serif; text-align: center; margin: 0; overflow-x: hidden; }
-        .header { padding: 30px; background: #111; border-bottom: 2px solid #d4af37; }
-        .balance-label { font-size: 14px; color: #888; text-transform: uppercase; }
-        .balance-value { font-size: 45px; font-weight: bold; color: #d4af37; margin-top: 5px; }
-        .mine-container { padding: 50px 0; }
-        .k-btn { 
-            width: 180px; height: 180px; border-radius: 50%; border: 10px solid #222;
-            background: linear-gradient(145deg, #d4af37, #b8962e);
-            font-size: 70px; color: #000; font-weight: bold; cursor: pointer;
-            box-shadow: 0 0 40px rgba(212,175,55,0.2);
+        :root { --gold: #d4af37; --bg: #000; --card: #111; }
+        body { background: var(--bg); color: white; font-family: 'Inter', sans-serif; margin: 0; text-align: center; }
+        .header { padding: 40px 20px; background: linear-gradient(to bottom, #111, #000); border-bottom: 1px solid #222; }
+        .balance { font-size: 50px; font-weight: bold; color: var(--gold); margin: 10px 0; }
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 20px; }
+        .stat-box { background: var(--card); padding: 15px; border-radius: 12px; border: 1px solid #222; }
+        .stat-label { font-size: 10px; color: #666; text-transform: uppercase; margin-bottom: 5px; }
+        .stat-val { font-size: 14px; font-weight: bold; color: #eee; }
+        .mine-btn { 
+            width: 180px; height: 180px; border-radius: 50%; border: 8px solid #222;
+            background: radial-gradient(circle, #f1d367, #d4af37);
+            font-size: 60px; font-weight: bold; cursor: pointer; margin: 30px 0;
+            box-shadow: 0 0 30px rgba(212,175,55,0.1); transition: 0.3s;
         }
-        .k-btn:active { transform: scale(0.92); }
-        .card { width: 85%; max-width: 400px; background: #111; margin: 20px auto; padding: 20px; border-radius: 15px; border: 1px solid #222; text-align: left; }
-        .card-title { color: #d4af37; font-size: 14px; font-weight: bold; border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 15px; }
+        .mine-btn:active { transform: scale(0.9); }
+        .card { background: var(--card); margin: 0 20px 20px; padding: 20px; border-radius: 15px; text-align: left; border: 1px solid #222; }
+        .card-title { color: var(--gold); font-size: 12px; font-weight: bold; margin-bottom: 15px; display: block; letter-spacing: 1px; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <div class="balance-label">Saldo em Mineração</div>
-        <div class="balance-value" id="mainBalance">0.00000</div>
-    </div>
-
-    <div class="mine-container">
-        <button class="k-btn" id="mineAction">K</button>
-        <p id="status" style="color:#444; margin-top:20px;">TOQUE PARA INICIAR</p>
-    </div>
-
-    <div class="card">
-        <div class="card-title">🏆 RANKING GLOBAL (ANÓNIMO)</div>
-        <div id="rankList">A ligar à rede...</div>
-    </div>
-
-    <script>
-        let currentBalance = parseFloat(localStorage.getItem('kson_total')) || 0;
-        const display = document.getElementById('mainBalance');
-        const status = document.getElementById('status');
-
-        display.innerText = currentBalance.toFixed(5);
-
-        document.getElementById('mineAction').onclick = () => {
-            // Protocolo de Mineração $KSON
-            currentBalance += 0.00055;
-            display.innerText = currentBalance.toFixed(5);
-            
-            // Salva localmente
-            localStorage.setItem('kson_total', currentBalance);
-            
-            // Salva na Nuvem (Firebase)
-            if (window.saveData) {
-                window.saveData(currentBalance);
-                status.innerText = "Sincronizado com a Rede";
-                status.style.color = "#d4af37";
-            }
-        };
-    </script>
-</body>
-</html>
+        <div style="font-size: 12px; color:
