@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Kaulson Network | Mineração 24h</title>
+    <title>Kaulson Network | Oficial</title>
 
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-      import { getFirestore, doc, setDoc, onSnapshot, collection, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+      import { getFirestore, doc, setDoc, onSnapshot, collection, query, orderBy, limit, where, getDocs, getCountFromServer } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
       const firebaseConfig = {
         apiKey: "AIzaSyA51GrwiUnvZVbv4Cvz-M", 
@@ -21,123 +21,140 @@
       const app = initializeApp(firebaseConfig);
       const db = getFirestore(app);
 
-      let userId = localStorage.getItem('kson_id_v8') || 'Minerador_' + Math.floor(Math.random() * 89999 + 10000);
-      localStorage.setItem('kson_id_v8', userId);
+      // --- MIGRACAO E IDENTIDADE ---
+      // Recupera saldo de qualquer versao anterior para voce nao perder nada
+      let saldoSalvo = parseFloat(localStorage.getItem('kson_total_v10')) || 
+                       parseFloat(localStorage.getItem('kson_total_v9')) || 
+                       parseFloat(localStorage.getItem('kson_bal_v7')) || 0;
 
-      window.updateCloud = async (valor) => {
-        try {
-          await setDoc(doc(db, "ranking", userId), { id: userId, saldo: valor, t: Date.now() }, { merge: true });
-        } catch (e) { }
+      let userId = localStorage.getItem('kson_id_v10');
+      if(!userId) {
+          userId = 'KSON_' + Math.floor(Math.random() * 89999 + 10000);
+          localStorage.setItem('kson_id_v10', userId);
+      }
+      localStorage.setItem('kson_total_v10', saldoSalvo);
+
+      const refBy = new URLSearchParams(window.location.search).get('ref');
+
+      // --- REGRAS DO PROTOCOLO ---
+      window.getStats = async () => {
+          const coll = collection(db, "kaulson_main");
+          const userCount = (await getCountFromServer(coll)).data().count;
+          
+          let rate = 2.0; // Regra 1: Halving
+          if(userCount > 100000) rate = 1.0;
+          if(userCount > 500000) rate = 0.5;
+
+          // Regra 3: Referral (+25% por amigo ativo)
+          const q = query(coll, where("ref", "==", userId), where("active", "==", true));
+          const bonus = 1 + ((await getDocs(q)).size * 0.25);
+
+          return (rate * bonus) / 3600;
       };
 
-      onSnapshot(query(collection(db, "ranking"), orderBy("saldo", "desc"), limit(5)), (snap) => {
-        const list = document.getElementById('rankList');
-        list.innerHTML = "";
-        snap.forEach(d => {
-            const data = d.data();
-            list.innerHTML += `<div style="display:flex;justify-content:space-between;padding:10px;border-bottom:1px solid #222;">
-                <span style="color:${data.id === userId ? '#d4af37' : '#888'}">${data.id}</span>
-                <span style="color:#d4af37;font-weight:bold;">${Number(data.saldo).toFixed(5)} $KSON</span>
-            </div>`;
-        });
+      window.sync = async (s, isActive) => {
+          await setDoc(doc(db, "kaulson_main", userId), {
+              id: userId, saldo: s, active: isActive, 
+              last: Date.now(), ref: localStorage.getItem('kson_ref_v10') || ""
+          }, { merge: true });
+      };
+
+      // Ranking (kaulson_main é a nova pasta limpa)
+      onSnapshot(query(collection(db, "kaulson_main"), orderBy("saldo", "desc"), limit(10)), (snap) => {
+          const list = document.getElementById('rankList');
+          list.innerHTML = "";
+          snap.forEach(d => {
+              const u = d.data();
+              list.innerHTML += `<div style="display:flex;justify-content:space-between;padding:10px;border-bottom:1px solid #222;">
+                  <span style="${u.id===userId?'color:#d4af37':''}"> ${u.id === userId ? '<b>VOCÊ</b>' : u.id}</span>
+                  <span style="color:#d4af37">${u.saldo.toFixed(5)} $KSON</span>
+              </div>`;
+          });
       });
     </script>
 
     <style>
-        body { background: #000; color: #fff; font-family: -apple-system, sans-serif; text-align: center; margin: 0; }
-        .container { padding: 40px 20px; }
-        .balance { font-size: 55px; font-weight: bold; color: #d4af37; margin-top: 10px; }
-        .status-box { background: #111; padding: 15px; border-radius: 12px; margin: 20px 0; border: 1px solid #222; }
-        .k-btn { 
-            width: 200px; height: 200px; border-radius: 50%; border: 10px solid #222;
-            background: #d4af37; font-size: 80px; font-weight: bold; cursor: pointer;
-            box-shadow: 0 0 40px rgba(212,175,55,0.2); transition: 0.3s;
-        }
-        .k-btn.active { background: #1a1a1a; color: #d4af37; border-color: #d4af37; pointer-events: none; }
-        .card { background: #111; margin: 20px auto; padding: 20px; border-radius: 15px; text-align: left; border: 1px solid #222; max-width: 400px; }
-        #timer { color: #d4af37; font-weight: bold; }
+        body { background: #000; color: #fff; font-family: sans-serif; text-align: center; margin: 0; }
+        .header { padding: 40px 20px; border-bottom: 1px solid #222; background: linear-gradient(#111, #000); }
+        .bal { font-size: 55px; font-weight: bold; color: #d4af37; text-shadow: 0 0 15px rgba(212,175,55,0.2); }
+        .k-btn { width: 180px; height: 180px; border-radius: 50%; border: 8px solid #222; background: #d4af37; font-size: 70px; font-weight: bold; cursor: pointer; margin: 25px 0; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .k-btn.active { background: #111; color: #d4af37; border-color: #d4af37; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(212,175,55,0.4); } 70% { box-shadow: 0 0 0 20px rgba(212,175,55,0); } 100% { box-shadow: 0 0 0 0 rgba(212,175,55,0); } }
+        .card { background: #111; margin: 15px; padding: 20px; border-radius: 15px; text-align: left; border: 1px solid #222; }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <div style="font-size: 12px; color: #666; letter-spacing: 2px;">SALDO DA REDE</div>
-        <div class="balance" id="visor">0.00000</div>
+    <div class="header">
+        <div style="font-size: 11px; color: #666; letter-spacing: 2px;">KAULSON NETWORK PRO</div>
+        <div class="bal" id="visor">0.00000</div>
+        <div id="rateTxt" style="color: #666; font-size: 12px; margin-top: 5px;">Velocidade: Carregando...</div>
+    </div>
 
-        <div class="status-box">
-            <div id="statusTxt" style="font-size: 14px; margin-bottom: 5px; color: #ff4444;">MINERAÇÃO INATIVA</div>
-            <div id="timer">Clique no botão para ativar 24h</div>
-        </div>
+    <button class="k-btn" id="btnMine">K</button>
 
-        <button class="k-btn" id="mainBtn">K</button>
+    <div class="card">
+        <div id="statusTxt" style="font-weight: bold; font-size: 12px; color: #ff4444;">SISTEMA INATIVO</div>
+        <div id="timer" style="font-size: 20px; margin-top: 5px; font-weight: bold;">Clique para Iniciar 24h</div>
+    </div>
 
-        <div class="card">
-            <b style="color:#d4af37; font-size: 12px;">🏆 RANKING GLOBAL</b>
-            <div id="rankList" style="margin-top:15px; font-size: 14px;">A carregar...</div>
-        </div>
+    <div class="card">
+        <b style="color:#d4af37; font-size: 12px;">🏆 RANKING GÉNESIS</b>
+        <div id="rankList" style="margin-top:15px; font-size: 14px;">Iniciando rede...</div>
     </div>
 
     <script>
-        let balance = parseFloat(localStorage.getItem('kson_bal')) || 0;
-        let lastClick = parseInt(localStorage.getItem('kson_last_click')) || 0;
-        const visor = document.getElementById('visor');
-        const mainBtn = document.getElementById('mainBtn');
-        const statusTxt = document.getElementById('statusTxt');
-        const timer = document.getElementById('timer');
+        let balance = parseFloat(localStorage.getItem('kson_total_v10')) || 0;
+        let lastClick = parseInt(localStorage.getItem('kson_last_v10')) || 0;
+        let ratePerSec = 2.0 / 3600;
+        const cycle = 24 * 60 * 60 * 1000;
 
-        // REGRA: 2.0 KSON POR HORA = 0.0005555 POR SEGUNDO
-        const ratePerSec = 2.0 / 3600;
-        const cycle = 24 * 60 * 60 * 1000; // 24 Horas em milissegundos
+        async function updateStats() {
+            if (window.getStats) ratePerSec = await window.getStats();
+            document.getElementById('rateTxt').innerText = `Velocidade Atual: ${(ratePerSec * 3600).toFixed(2)} $KSON/h`;
+        }
 
-        function updateUI() {
+        function run() {
             const now = Date.now();
             const elapsed = now - lastClick;
 
             if (lastClick > 0 && elapsed < cycle) {
-                // ESTÁ A MINERAR
-                statusTxt.innerText = "MINERAÇÃO ATIVA";
-                statusTxt.style.color = "#00ff00";
-                mainBtn.classList.add('active');
-                mainBtn.innerText = "⛏️";
-
-                // Cálculo do tempo restante
-                const remaining = cycle - elapsed;
-                const hours = Math.floor(remaining / (60 * 60 * 1000));
-                const mins = Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000));
-                const secs = Math.floor((remaining % (60 * 1000)) / 1000);
-                timer.innerText = `Expira em: ${hours}h ${mins}m ${secs}s`;
-
-                // Aumentar o saldo
                 balance += ratePerSec;
-                visor.innerText = balance.toFixed(5);
-                localStorage.setItem('kson_bal', balance);
-                
-                // Sincroniza com a nuvem a cada 10 segundos
-                if (Math.floor(now / 1000) % 10 === 0) {
-                    if (window.updateCloud) window.updateCloud(balance);
-                }
+                document.getElementById('visor').innerText = balance.toFixed(5);
+                localStorage.setItem('kson_total_v10', balance);
+
+                const rem = cycle - elapsed;
+                const h = Math.floor(rem / 3600000);
+                const m = Math.floor((rem % 3600000) / 60000);
+                const s = Math.floor((rem % 60000) / 1000);
+
+                document.getElementById('statusTxt').innerText = "MINERAÇÃO ATIVA";
+                document.getElementById('statusTxt').style.color = "#00ff00";
+                document.getElementById('timer').innerText = `${h}h ${m}m ${s}s`;
+                document.getElementById('btnMine').classList.add('active');
+                document.getElementById('btnMine').innerText = "⛏️";
+
+                if (Math.floor(now/1000) % 20 === 0 && window.sync) window.sync(balance, true);
             } else {
-                // PAROU DE MINERAR
-                statusTxt.innerText = "MINERAÇÃO INATIVA";
-                statusTxt.style.color = "#ff4444";
-                mainBtn.classList.remove('active');
-                mainBtn.innerText = "K";
-                timer.innerText = "Clica para validar a tua presença";
-                visor.innerText = balance.toFixed(5);
+                document.getElementById('statusTxt').innerText = "SISTEMA INATIVO";
+                document.getElementById('statusTxt').style.color = "#ff4444";
+                document.getElementById('timer').innerText = "Toque para validar (24h)";
+                document.getElementById('btnMine').classList.remove('active');
+                document.getElementById('btnMine').innerText = "K";
+                if (window.sync && lastClick > 0) window.sync(balance, false);
             }
         }
 
-        mainBtn.onclick = () => {
-            const now = Date.now();
-            if (now - lastClick >= cycle || lastClick === 0) {
-                lastClick = now;
-                localStorage.setItem('kson_last_click', lastClick);
-                if (window.updateCloud) window.updateCloud(balance);
+        document.getElementById('btnMine').onclick = () => {
+            if (Date.now() - lastClick >= cycle || lastClick === 0) {
+                lastClick = Date.now();
+                localStorage.setItem('kson_last_v10', lastClick);
+                updateStats();
             }
         };
 
-        // Roda a lógica a cada 1 segundo
-        setInterval(updateUI, 1000);
+        setInterval(run, 1000);
+        setTimeout(updateStats, 2000);
     </script>
 </body>
 </html>
