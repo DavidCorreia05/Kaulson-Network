@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Kaulson Network | Oficial v11</title>
+    <title>Kaulson Network | Protocolo Final</title>
 
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -21,111 +21,148 @@
       const app = initializeApp(firebaseConfig);
       const db = getFirestore(app);
 
-      // NOVO SISTEMA DE ID (LIMPO)
-      let userId = localStorage.getItem('kson_id_v11') || 'USER_' + Math.floor(Math.random() * 89999 + 10000);
-      localStorage.setItem('kson_id_v11', userId);
+      // IDENTIDADE ÚNICA (REGRA 5)
+      let userId = localStorage.getItem('kson_id_v13') || 'KSON_' + Math.floor(Math.random() * 89999 + 10000);
+      localStorage.setItem('kson_id_v13', userId);
 
-      // SINCRONIZAÇÃO COM A NOVA PASTA 'kaulson_v11_final'
-      window.syncToCloud = async (saldo, isMining) => {
-          try {
-              await setDoc(doc(db, "kaulson_v11_final", userId), {
-                  id: userId,
-                  saldo: saldo,
-                  active: isMining,
-                  last: Date.now()
-              }, { merge: true });
-          } catch (e) { console.error(e); }
+      // CAPTURA DE CONVITE
+      const refBy = new URLSearchParams(window.location.search).get('ref');
+      if(refBy && refBy !== userId && !localStorage.getItem('kson_invited_by')) {
+          localStorage.setItem('kson_invited_by', refBy);
+      }
+
+      // CÁLCULO DE VELOCIDADE (REGRAS 1 E 3 INTEGRADAS)
+      window.getMiningStats = async () => {
+          const coll = collection(db, "kaulson_v13");
+          const totalUsers = (await getCountFromServer(coll)).data().count;
+          
+          let rate = 2.0; // Halving (Regra 1)
+          if(totalUsers > 100000) rate = 1.0;
+          if(totalUsers > 500000) rate = 0.5;
+
+          // Bónus de 25% por Amigo Ativo (Regra 3)
+          const 24hAgo = Date.now() - (24 * 60 * 60 * 1000);
+          const q = query(coll, where("invitedBy", "==", userId), where("lastClick", ">", 24hAgo));
+          const activeFriends = (await getDocs(q)).size;
+          
+          const finalRate = rate * (1 + (activeFriends * 0.25));
+          return finalRate / 3600; // Taxa por segundo
       };
 
-      // RANKING EM TEMPO REAL (APENAS DA NOVA REDE)
-      onSnapshot(query(collection(db, "kaulson_v11_final"), orderBy("saldo", "desc"), limit(10)), (snap) => {
+      window.syncV13 = async (saldo, isMining) => {
+          await setDoc(doc(db, "kaulson_v13", userId), {
+              id: userId, saldo: saldo, isMining: isMining,
+              lastClick: isMining ? Date.now() : (parseInt(localStorage.getItem('kson_last_v13')) || 0),
+              invitedBy: localStorage.getItem('kson_invited_by') || "Organic"
+          }, { merge: true });
+      };
+
+      // RANKING
+      onSnapshot(query(collection(db, "kaulson_v13"), orderBy("saldo", "desc"), limit(10)), (snap) => {
           const list = document.getElementById('rankList');
           list.innerHTML = "";
           snap.forEach(d => {
               const u = d.data();
-              list.innerHTML += `<div style="display:flex;justify-content:space-between;padding:10px;border-bottom:1px solid #222;">
-                  <span style="${u.id===userId?'color:#d4af37;font-weight:bold;':''}">${u.id === userId ? 'VOCÊ' : u.id}</span>
-                  <span style="color:#d4af37">${u.saldo.toFixed(5)} $KSON</span>
+              list.innerHTML += `<div style="display:flex;justify-content:space-between;padding:12px;border-bottom:1px solid #222;font-size:14px;">
+                  <span style="${u.id===userId?'color:#d4af37;font-weight:bold;':''}">${u.id===userId?'VOCÊ':u.id}</span>
+                  <span style="color:#d4af37;font-weight:bold;">${u.saldo.toFixed(5)}</span>
               </div>`;
           });
       });
     </script>
 
     <style>
-        body { background: #000; color: #fff; font-family: -apple-system, sans-serif; text-align: center; margin: 0; }
-        .header { padding: 45px 20px; border-bottom: 1px solid #222; background: #0a0a0a; }
-        .bal { font-size: 55px; font-weight: bold; color: #d4af37; letter-spacing: -1px; }
-        .k-btn { width: 190px; height: 190px; border-radius: 50%; border: 8px solid #222; background: #d4af37; font-size: 80px; font-weight: bold; cursor: pointer; margin: 30px 0; transition: 0.3s; }
-        .k-btn.active { background: #111; color: #d4af37; border-color: #d4af37; animation: glow 2s infinite; }
-        @keyframes glow { 0% { box-shadow: 0 0 5px #d4af37; } 50% { box-shadow: 0 0 20px #d4af37; } 100% { box-shadow: 0 0 5px #d4af37; } }
-        .card { background: #111; margin: 15px; padding: 20px; border-radius: 18px; text-align: left; border: 1px solid #222; }
+        body { background: #000; color: #fff; font-family: -apple-system, sans-serif; text-align: center; margin: 0; padding-bottom: 40px; }
+        .header { padding: 40px 20px; background: #080808; border-bottom: 1px solid #222; }
+        .bal { font-size: 50px; font-weight: bold; color: #d4af37; text-shadow: 0 0 20px rgba(212,175,55,0.2); }
+        .k-btn { width: 180px; height: 180px; border-radius: 50%; border: 8px solid #222; background: #d4af37; font-size: 70px; font-weight: bold; cursor: pointer; margin: 25px 0; outline: none; transition: 0.3s; }
+        .k-btn.active { background: #111; color: #d4af37; border-color: #d4af37; box-shadow: 0 0 30px rgba(212,175,55,0.2); }
+        .card { background: #111; margin: 15px; padding: 20px; border-radius: 16px; text-align: left; border: 1px solid #222; }
+        .btn-copy { background: #d4af37; color: #000; border: none; padding: 12px; width: 100%; border-radius: 10px; font-weight: bold; margin-top: 10px; cursor: pointer; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <div style="font-size: 11px; color: #555; letter-spacing: 2px; margin-bottom: 5px;">SALDO ATUAL</div>
+        <div style="font-size: 11px; color: #666; letter-spacing: 2px;">KAULSON ASSET BALANCE</div>
         <div class="bal" id="visor">0.00000</div>
+        <div id="speed" style="color: #d4af37; font-size: 12px; margin-top: 5px;">Velocidade: Calculando...</div>
     </div>
 
     <button class="k-btn" id="btnMine">K</button>
 
     <div class="card">
-        <div id="statusTxt" style="font-weight: bold; font-size: 12px; color: #ff4444; letter-spacing: 1px;">SISTEMA OFFLINE</div>
-        <div id="timer" style="font-size: 18px; margin-top: 5px; font-weight: 500;">Clique para iniciar 24h</div>
+        <div id="status" style="font-weight: bold; font-size: 12px; color: #ff4444; letter-spacing: 1px;">SISTEMA OFFLINE</div>
+        <div id="timer" style="font-size: 20px; margin-top: 5px; font-weight: bold; color: #eee;">Toque para validar presença</div>
     </div>
 
     <div class="card">
-        <b style="color:#d4af37; font-size: 13px;">🏆 RANKING GÉNESIS (V11)</b>
-        <div id="rankList" style="margin-top:15px; font-size: 14px;">A ligar à rede limpa...</div>
+        <b style="color:#d4af37; font-size: 12px;">🔗 SEU LINK DE CONVITE (+25% BÓNUS)</b>
+        <button class="btn-copy" id="btnCopy">COPIAR LINK OFICIAL</button>
+    </div>
+
+    <div class="card">
+        <b style="color:#d4af37; font-size: 12px;">🏆 RANKING DE MINERAÇÃO</b>
+        <div id="rankList" style="margin-top:15px;">A ligar à rede...</div>
     </div>
 
     <script>
-        let balance = 0; // Começa do ZERO absoluto
-        let lastClick = 0;
+        let balance = parseFloat(localStorage.getItem('kson_v13_bal')) || 0;
+        let lastClick = parseInt(localStorage.getItem('kson_last_v13')) || 0;
+        let rps = 2.0 / 3600; 
         const cycle = 24 * 60 * 60 * 1000;
-        const ratePerSec = 2.0 / 3600;
 
-        function update() {
+        async function init() {
+            if (window.getMiningStats) rps = await window.getMiningStats();
+            document.getElementById('speed').innerText = `Velocidade: ${(rps * 3600).toFixed(2)} $KSON/h`;
+        }
+
+        function mainLoop() {
             const now = Date.now();
             const elapsed = now - lastClick;
 
             if (lastClick > 0 && elapsed < cycle) {
-                balance += ratePerSec;
+                balance += rps;
                 document.getElementById('visor').innerText = balance.toFixed(5);
-                
-                const rem = cycle - elapsed;
-                const h = Math.floor(rem / 3600000);
-                const m = Math.floor((rem % 3600000) / 60000);
-                const s = Math.floor((rem % 60000) / 1000);
+                localStorage.setItem('kson_v13_bal', balance);
 
-                document.getElementById('statusTxt').innerText = "MINERAÇÃO ATIVA";
-                document.getElementById('statusTxt').style.color = "#00ff00";
+                const rem = cycle - elapsed;
+                const h = Math.floor(rem/3600000), m = Math.floor((rem%3600000)/60000), s = Math.floor((rem%60000)/1000);
+                
+                document.getElementById('status').innerText = "MINERAÇÃO ATIVA";
+                document.getElementById('status').style.color = "#00ff00";
                 document.getElementById('timer').innerText = `${h}h ${m}m ${s}s restantes`;
                 document.getElementById('btnMine').classList.add('active');
                 document.getElementById('btnMine').innerText = "⛏️";
 
-                // Sincroniza a cada 15 segundos
-                if (Math.floor(now/1000) % 15 === 0 && window.syncToCloud) {
-                    window.syncToCloud(balance, true);
-                }
+                // Sincroniza a cada 20 segundos
+                if (Math.floor(now/1000) % 20 === 0 && window.syncV13) window.syncV13(balance, true);
             } else {
-                document.getElementById('statusTxt').innerText = "SISTEMA OFFLINE";
-                document.getElementById('statusTxt').style.color = "#ff4444";
-                document.getElementById('timer').innerText = "Toque no K para validar (24h)";
+                document.getElementById('status').innerText = "SISTEMA OFFLINE";
+                document.getElementById('status').style.color = "#ff4444";
+                document.getElementById('timer').innerText = "Toque para validar presença";
                 document.getElementById('btnMine').classList.remove('active');
                 document.getElementById('btnMine').innerText = "K";
+                if (window.syncV13 && lastClick > 0) window.syncV13(balance, false);
             }
         }
 
         document.getElementById('btnMine').onclick = () => {
             if (Date.now() - lastClick >= cycle || lastClick === 0) {
                 lastClick = Date.now();
-                if(window.syncToCloud) window.syncToCloud(balance, true);
+                localStorage.setItem('kson_last_v13', lastClick);
+                init();
             }
         };
 
-        setInterval(update, 1000);
+        document.getElementById('btnCopy').onclick = () => {
+            const link = `${window.location.origin}${window.location.pathname}?ref=${localStorage.getItem('kson_id_v13')}`;
+            navigator.clipboard.writeText(link);
+            alert("Link copiado com sucesso!");
+        };
+
+        setInterval(mainLoop, 1000);
+        setTimeout(init, 2000); // Carrega bónus logo ao entrar
     </script>
 </body>
 </html>
